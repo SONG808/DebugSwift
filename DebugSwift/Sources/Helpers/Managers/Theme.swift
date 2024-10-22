@@ -15,14 +15,14 @@ public enum Appearance {
 class Theme {
     static var shared = Theme()
 
-    var interfaceStyleColor: UIUserInterfaceStyle = .dark
+    var interfaceStyleColor: UIColor = .black
     var backgroundColor: UIColor = .black
     var fontColor: UIColor = .white
     var statusFetchColor: UIColor = .green
     var appearance: Appearance = .dark
 
     func setupInterfaceStyle() {
-        interfaceStyleColor = appearance == .dark ? .dark : .light
+        interfaceStyleColor = appearance == .dark ? .black : .white
     }
 
     func setupBackgroundColor() {

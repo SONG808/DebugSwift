@@ -523,12 +523,25 @@ extension Reachability {
 
     #if !targetEnvironment(macCatalyst)
     static func getWWANNetworkType() -> NetworkType {
-        let networkTypes = (CTTelephonyNetworkInfo().serviceCurrentRadioAccessTechnology ?? [:])
-            .sorted(by: { $0.key < $1.key })
-            .map(\.value)
-            .map(NetworkType.init(_:))
+        let telephonyInfo = CTTelephonyNetworkInfo()
 
-        return networkTypes.first(where: { $0 != .unknownTechnology }) ?? .unknown
+        // 适配 iOS 12 以下的版本
+        if #available(iOS 12.0, *) {
+            // iOS 12 及以上版本使用 serviceCurrentRadioAccessTechnology
+            let networkTypes = (telephonyInfo.serviceCurrentRadioAccessTechnology ?? [:])
+                .sorted(by: { $0.key < $1.key })
+                .map(\.value)
+                .map(NetworkType.init(_:))
+
+            return networkTypes.first(where: { $0 != .unknownTechnology }) ?? .unknown
+        } else {
+            // iOS 12 以下版本使用 currentRadioAccessTechnology
+            if let radioAccessTechnology = telephonyInfo.currentRadioAccessTechnology {
+                return NetworkType(radioAccessTechnology)
+            } else {
+                return .unknown
+            }
+        }
     }
     #endif
 }

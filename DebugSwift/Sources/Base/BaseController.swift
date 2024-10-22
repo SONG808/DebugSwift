@@ -12,14 +12,14 @@ class BaseController: UIViewController {
     init() {
         super.init(nibName: nil, bundle: nil)
         if #available(iOS 13.0, *) {
-            overrideUserInterfaceStyle = Theme.shared.interfaceStyleColor
+            overrideUserInterfaceStyle = Theme.shared.appearance == .dark ? .dark:.light
         }
     }
 
     init(withNib _: Bool) {
         super.init(nibName: nil, bundle: nil)
         if #available(iOS 13.0, *) {
-            overrideUserInterfaceStyle = Theme.shared.interfaceStyleColor
+            overrideUserInterfaceStyle = Theme.shared.appearance == .dark ? .dark:.light
         }
     }
 

@@ -40,7 +40,7 @@ class TabBarController: UITabBarController {
         tabBar.setBackgroundColor(color: Theme.shared.backgroundColor)
         tabBar.addTopBorderWithColor(color: .gray, thickness: 0.3)
         if #available(iOS 13.0, *) {
-            overrideUserInterfaceStyle = Theme.shared.interfaceStyleColor
+            overrideUserInterfaceStyle = Theme.shared.appearance == .dark ? .dark:.light
         }
     }
 
