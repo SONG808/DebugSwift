@@ -353,4 +353,25 @@ extension CustomHTTPProtocol: URLSessionTaskDelegate {
             )
         }
     }
+    
+    func urlSession(
+        _ session: URLSession,
+        task: URLSessionTask,
+        didReceive challenge: URLAuthenticationChallenge,
+        completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void
+    ) {
+        
+        // 获取服务器证书的方法
+        let serverTrust = challenge.protectionSpace.serverTrust
+        
+        // 使用自签名证书或忽略证书检查
+        if challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust,
+           let serverTrust = serverTrust {
+            let credential = URLCredential(trust: serverTrust)
+            completionHandler(.useCredential, credential) // 直接使用不安全证书
+        } else {
+            // 其他情况默认处理
+            completionHandler(.performDefaultHandling, nil)
+        }
+    }
 }
