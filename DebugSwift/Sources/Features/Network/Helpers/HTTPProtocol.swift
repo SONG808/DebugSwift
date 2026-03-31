@@ -150,7 +150,6 @@ public final class CustomHTTPProtocol: URLProtocol, @unchecked Sendable {
         prevUrl = request.url
         prevStartTime = startTime
         
-        // Capture the most recent application delegate for forwarding authentication challenges
         originalDelegate = URLSessionDelegateRegistry.shared.getMostRecentDelegate()
         
         // Use preserved configuration if available, otherwise fall back to default
@@ -591,6 +590,26 @@ extension CustomHTTPProtocol: URLSessionDataDelegate {
 }
 
 extension CustomHTTPProtocol: URLSessionTaskDelegate {
+    private func handleServerTrustFallback(
+        for challenge: URLAuthenticationChallenge,
+        disposition: URLSession.AuthChallengeDisposition,
+        credential: URLCredential?,
+        completionHandler: @escaping @Sendable (URLSession.AuthChallengeDisposition, URLCredential?) -> Void
+    ) {
+        guard challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust,
+              let serverTrust = challenge.protectionSpace.serverTrust else {
+            completionHandler(disposition, credential)
+            return
+        }
+        
+        if disposition == .performDefaultHandling, credential == nil {
+            completionHandler(.useCredential, URLCredential(trust: serverTrust))
+            return
+        }
+        
+        completionHandler(disposition, credential)
+    }
+    
     public func urlSession(
         _ session: URLSession,
         task: URLSessionTask,
@@ -631,10 +650,21 @@ extension CustomHTTPProtocol: URLSessionTaskDelegate {
             // Forward to original delegate if available and implements the method
             if let originalDelegate = self.originalDelegate,
                originalDelegate.responds(to: #selector(URLSessionDelegate.urlSession(_:didReceive:completionHandler:))) {
-                originalDelegate.urlSession?(session, didReceive: challenge, completionHandler: completionHandler)
+                originalDelegate.urlSession?(session, didReceive: challenge) { disposition, credential in
+                    self.handleServerTrustFallback(
+                        for: challenge,
+                        disposition: disposition,
+                        credential: credential,
+                        completionHandler: completionHandler
+                    )
+                }
             } else {
-                // Default handling if no original delegate
-                completionHandler(.performDefaultHandling, nil)
+                self.handleServerTrustFallback(
+                    for: challenge,
+                    disposition: .performDefaultHandling,
+                    credential: nil,
+                    completionHandler: completionHandler
+                )
             }
         }
     }
@@ -656,7 +686,14 @@ extension CustomHTTPProtocol: URLSessionTaskDelegate {
             // Forward to original delegate if available and implements the method
             if let originalDelegate = self.originalDelegate as? URLSessionTaskDelegate,
                originalDelegate.responds(to: #selector(URLSessionTaskDelegate.urlSession(_:task:didReceive:completionHandler:))) {
-                originalDelegate.urlSession?(session, task: task, didReceive: challenge, completionHandler: completionHandler)
+                originalDelegate.urlSession?(session, task: task, didReceive: challenge) { disposition, credential in
+                    self.handleServerTrustFallback(
+                        for: challenge,
+                        disposition: disposition,
+                        credential: credential,
+                        completionHandler: completionHandler
+                    )
+                }
             } else {
                 // Fallback to session-level challenge if task-level not implemented
                 self.urlSession(session, didReceive: challenge, completionHandler: completionHandler)

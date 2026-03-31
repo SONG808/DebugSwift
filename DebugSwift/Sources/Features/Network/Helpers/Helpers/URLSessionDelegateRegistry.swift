@@ -112,4 +112,3 @@ extension URLSession {
         // No longer needed - registration is now explicit
     }
 }
-
